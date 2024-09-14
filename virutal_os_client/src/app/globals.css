@@ -1,0 +1,53 @@
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+.cursor-ug {
+  animation: borderAnimation 1s infinite;
+}
+@keyframes borderAnimation {
+  0%,
+  50%,
+  100% {
+    border-right: 1px solid gray;
+  }
+  25%,
+  75% {
+    border-right: none;
+  }
+}
+input[type="radio"] {
+  display: none;
+}
+input[type="radio"]:checked + label {
+  background-color: #3498db;
+  color: white;
+  border-color: #2980b9;
+}
+label {
+  display: inline; /* or inline-block, depending on your needs */
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  line-height: normal; /* Ensures the line height is consistent with text */
+  vertical-align: middle; /* Aligns the label with surrounding text */
+}
+/* WebKit Browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #555;
+}

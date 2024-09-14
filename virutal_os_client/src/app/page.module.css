@@ -1,0 +1,28 @@
+/* components/BlinkingText.module.css */
+
+/* Basic styling for the box */
+.blinkingBox {
+  color: inherit;
+}
+
+/* Keyframes for the blinking animation */
+@keyframes blink {
+  0%,
+  50%,
+  100% {
+    opacity: 1;
+  }
+  25%,
+  75% {
+    opacity: 0;
+  }
+}
+
+
+/* Applying the blinking animation */
+.blinkingBox {
+  animation: blink 1s infinite;
+  /* 
+  animation: [name] [duration] [timing-function] [delay] [iteration-count] [direction] [fill-mode];
+  */
+}
