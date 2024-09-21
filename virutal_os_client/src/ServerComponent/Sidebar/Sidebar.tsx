@@ -12,8 +12,6 @@ interface Props {
 export default function ResponsiveDrawer(props: Props) {
   const { children } = props;
 
-  console.log("Side bar");
-
   return (
     <ThemeWrapper>
       <Box sx={{ display: "flex" }}>

@@ -1,5 +1,5 @@
 "user client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import useTerminalStore, { IO } from "@/util/globalState/terminal";
@@ -10,14 +10,15 @@ import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import { CloseCallbackData } from "@/Clientcomp/EditorDrawer";
 import { io, Socket } from "socket.io-client";
-import { v4 as uuid } from "uuid";
 
 const TerminalComp = ({
   onTerminalAction,
   terminalScreenType,
+  isOpen,
 }: {
   onTerminalAction: (data: CloseCallbackData) => void;
   terminalScreenType: "full-screen" | "normal-screen";
+  isOpen: boolean;
   onStdout?: (mresult: string) => void;
 }) => {
   const {
@@ -32,59 +33,88 @@ const TerminalComp = ({
   const terminal = useRef<Terminal | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const directory = useRef<string>("╭─ 👾 ~ /surajit\r\n");
-  const lineArrow = useRef<string>("╰─❯");
+  // const directory = useRef<string>("╭─ 👾 ~ /surajit\r\n");
+  // const lineArrow = useRef<string>("╰─❯");
   const socketRef = useRef<Socket | null>(null);
-  const writeInfo = () => {
-    terminal.current?.write("\r\n");
-    terminal.current?.write(directory.current);
-    terminal.current?.write(lineArrow.current);
-  };
+
+  const onConnect = useCallback(() => {
+    setIsConnected(true);
+
+    socketRef.current?.emit("container-id", {
+      id: "180b33c37024",
+    });
+    socketRef.current?.on("exec:output", onOuput);
+    socketRef.current?.on("exec:error", onError);
+    socketRef.current?.io.engine.on("upgrade", (transport) => {
+      setTransport(transport.name);
+    });
+  }, []);
+  const onDisconnect = useCallback(function () {
+    console.log("dis-connected");
+    setIsConnected(false);
+    setTransport("N/A");
+  }, []);
   useEffect(() => {
-    console.log("mounted");
-    socketRef.current = io("http://localhost:3000");
+    if (!isOpen) {
+      return onTerminalClose();
+    }
+    const tunnelServerUrl =
+      process.env.NEXT_PUBLIC_TUNNEL_SERVER ?? "http://localhost:8000";
+    const socketToken = localStorage.getItem("socket-auth");
+    if (!socketToken) return alert("un authorized relogin");
+
+    socketRef.current = io(tunnelServerUrl, {
+      auth: {
+        token: socketToken,
+      },
+    });
     if (socketRef.current?.connected) {
       onConnect();
-    }
-
-    function onConnect() {
-      setIsConnected(true);
-
-      socketRef.current?.on("exec:output", (data) => {
-        console.log("data", data);
-        // handleOutPutRecive()
-      });
-      socketRef.current?.io.engine.on("upgrade", (transport) => {
-        setTransport(transport.name);
-      });
-    }
-
-    function onDisconnect() {
-      console.log("dis-connected");
-      setIsConnected(false);
-      setTransport("N/A");
     }
 
     socketRef.current?.on("connect", onConnect);
     socketRef.current?.on("disconnect", onDisconnect);
 
     return () => {
-      console.log("unmount");
-      socketRef.current?.off("connect", onConnect);
-      socketRef.current?.off("disconnect", onDisconnect);
-      socketRef.current?.off("exec:output");
-      socketRef.current?.io.engine.off("upgrade");
-      socketRef.current?.disconnect();
+      onTerminalClose();
     };
-  }, []);
+  }, [isOpen, onConnect, onTerminalClose]);
+  function onTerminalClose() {
+    console.log("unmount");
+    socketRef.current?.off("connect", onConnect);
+    socketRef.current?.off("disconnect", onDisconnect);
+    socketRef.current?.off("exec:output", onOuput);
+    socketRef.current?.off("exec:error", onError);
+    socketRef.current?.io.engine.off("upgrade");
+    socketRef.current?.disconnect();
+  }
+
+  function onOuput(data: string) {
+    terminal.current?.write(data);
+  }
+  function onError(data: any) {
+    console.log(data);
+  }
   // side effect when key press for terminal
   useEffect(() => {
     if (!keyPress) return;
-    if (keyPress === "enter") {
-      handleEnter();
-    } else if (keyPress === "clear") {
-    } else {
-      handleTerminalInput(keyPress);
+
+    switch (keyPress) {
+      case "enter":
+        sendKeyPressToServer("\r");
+        break;
+
+      case "clear":
+        sendKeyPressToServer("\b \b");
+        break;
+
+      case "space":
+        sendKeyPressToServer(" ");
+        break;
+
+      default:
+        sendKeyPressToServer(keyPress);
+        break;
     }
   }, [keyPress]);
 
@@ -92,74 +122,20 @@ const TerminalComp = ({
     if (terminalRef.current) {
       terminal.current = new Terminal();
       terminal.current?.open(terminalRef.current);
-      terminal.current?.write(
-        commandHistory
-          .map((cmd) => `\x1B[1;32m❯\x1B[0m ${cmd.command}\r\n${cmd.output}`)
-          .join("\r\n")
-      );
-      writeInfo();
     }
     return () => {
       terminal.current?.dispose();
     };
   }, []);
-  const sendCommandToServer = (commandInstance: IO) => {
+
+  const sendKeyPressToServer = (command: string) => {
     if (socketRef.current?.connected) {
-      console.log("commandInstance", commandInstance);
-      console.log("Emitting exec:input from client", socketRef.current?.id);
-      socketRef.current?.emit("exec:input", commandInstance);
+      socketRef.current?.emit("exec:input", { command });
     } else {
       console.error("Socket is not connected, cannot send command.");
     }
   };
 
-  const handleEnter = async () => {
-    const line = terminal.current?.buffer.active
-      .getLine(terminal.current?.buffer.active.cursorY)
-      ?.translateToString();
-
-    const command = line?.substring(lineArrow?.current?.length).trim();
-    console.log(command);
-    const commandInstance: IO = {
-      command: command ?? "",
-      output: "",
-      id: uuid(),
-    };
-    if (command === "clear") {
-      terminal.current?.clear();
-      terminal.current?.reset();
-      return clearTerminal();
-    }
-    if (command) sendCommandToServer(commandInstance); // result will be in handleOutPutRecive
-  };
-
-  const handleOutPutRecive = (commandInstance: IO) => {
-    let _commands_history: IO[] = [...commandHistory, commandInstance];
-    terminal.current?.clear();
-    terminal.current?.reset();
-
-    terminal.current?.write(
-      _commands_history
-        .map((cmd) => `\x1B[1;32m❯\x1B[0m ${cmd.command}\r\n${cmd.output}`)
-        .join("\r\n")
-    );
-
-    writeInfo();
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-  const handleTerminalInput = (data: string) => {
-    const charCode = data.charCodeAt(0);
-
-    if (charCode === 13) {
-      // Enter key
-      handleEnter();
-    } else if (charCode === 127) {
-      // Backspace key
-      terminal.current?.write("\b \b");
-    } else {
-      terminal.current?.write(data);
-    }
-  };
   return (
     <>
       <div
@@ -193,7 +169,7 @@ const TerminalComp = ({
           <ClearIcon />
         </IconButton>
       </div>
-      <div ref={terminalRef}></div>
+      <div id="hello" ref={terminalRef}></div>
       <div ref={scrollRef}></div>
     </>
   );

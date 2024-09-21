@@ -84,6 +84,7 @@ export default function EditorDrawer({
       position: "bottom",
       child: (
         <TerminalComp
+          isOpen={state["bottom"]}
           terminalScreenType={terminalScreenType}
           onTerminalAction={onTerminalAction}
         />
@@ -107,11 +108,13 @@ export default function EditorDrawer({
 
   //this will determine on where keyboard wirte to [either terminal or file]
   useEffect(() => {
-    if (currentKeyBoardFor === "file" && state.bottom)
-      return setCurrentKeyBoardFor("terminal");
-    if (currentKeyBoardFor === "terminal" && !state.bottom)
-      return setCurrentKeyBoardFor("file");
-  }, [state]);
+    if (currentKeyBoardFor === "file" && state.bottom) {
+      setCurrentKeyBoardFor("terminal");
+    } else if (currentKeyBoardFor === "terminal" && !state.bottom) {
+      setCurrentKeyBoardFor("file");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentKeyBoardFor, state.bottom]);
 
   return (
     <div>
