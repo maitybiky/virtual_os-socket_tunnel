@@ -21,7 +21,7 @@ Go to the project directory
 Install cli programm for local pc
 
 ```bash
-  cd cli && npm run build # use node 18
+  cd cli && npm run build # use node 18 while building
 ```
 
 Start the cli
