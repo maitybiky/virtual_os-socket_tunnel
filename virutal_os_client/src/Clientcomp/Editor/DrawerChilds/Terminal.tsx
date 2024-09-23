@@ -45,6 +45,7 @@ const TerminalComp = ({
     });
     socketRef.current?.on("exec:output", onOuput);
     socketRef.current?.on("exec:error", onError);
+    socketRef.current?.on("exec:info", onInfo);
     socketRef.current?.io.engine.on("upgrade", (transport) => {
       setTransport(transport.name);
     });
@@ -54,18 +55,29 @@ const TerminalComp = ({
     setIsConnected(false);
     setTransport("N/A");
   }, []);
+  const onConnectError = useCallback(function (err:Error) {
+    console.log("Connection Error : ", err.message);
+    
+    alert(err.message)
+  }, []);
   useEffect(() => {
     if (!isOpen) {
       return onTerminalClose();
     }
+
     const tunnelServerUrl =
       process.env.NEXT_PUBLIC_TUNNEL_SERVER ?? "http://localhost:8000";
+
     const socketToken = localStorage.getItem("socket-auth");
+
     if (!socketToken) return alert("un authorized relogin");
 
     socketRef.current = io(tunnelServerUrl, {
       auth: {
         token: socketToken,
+      },
+      query: {
+        agent: "web",
       },
     });
     if (socketRef.current?.connected) {
@@ -74,6 +86,8 @@ const TerminalComp = ({
 
     socketRef.current?.on("connect", onConnect);
     socketRef.current?.on("disconnect", onDisconnect);
+    socketRef.current?.on("connect_error", onConnectError);
+
 
     return () => {
       onTerminalClose();
@@ -82,8 +96,10 @@ const TerminalComp = ({
   function onTerminalClose() {
     console.log("unmount");
     socketRef.current?.off("connect", onConnect);
+    socketRef.current?.off("connect_error", onConnectError);
     socketRef.current?.off("disconnect", onDisconnect);
     socketRef.current?.off("exec:output", onOuput);
+    socketRef.current?.off("exec:info", onInfo);
     socketRef.current?.off("exec:error", onError);
     socketRef.current?.io.engine.off("upgrade");
     socketRef.current?.disconnect();
@@ -94,6 +110,9 @@ const TerminalComp = ({
   }
   function onError(data: any) {
     console.log(data);
+  }
+  function onInfo(data: any) {
+    console.log("INFO: ", data);
   }
   // side effect when key press for terminal
   useEffect(() => {

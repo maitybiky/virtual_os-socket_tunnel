@@ -37,13 +37,34 @@ io.use((socket, next) => {
 });
 
 const webSockets = new Map();
-const localMSockets = new Map();
+const cliSockets = new Map();
 
 io.on("connection", (socket) => {
   // execCommand({ command: "" }, socket);
-  console.log("hi", socket.user);
+
+  const userId = socket.user?._id;
+  const socketId = socket.id;
+  const agent = socket.handshake.query?.agent;
+  const local_machine_socket_id = cliSockets.get(userId);
+
+  if (local_machine_socket_id)
+    socket.emit("exec:info", { msg: "local machine online..." });
+
+  // storing user socket ids
+  if (agent == "cli") cliSockets.set(userId, socketId);
+  if (agent == "web") {
+    webSockets.set(userId, socketId);
+  }
+
+  socket.on("test", () => {
+    console.log(socketId);
+  });
   socket.on("exec:input", (data) => {
-    execCommand(data, socket);
+    // flow web -> here -> local machine
+    if (!local_machine_socket_id)
+      return socket.emit("exec:error", { msg: "machine not connected..." });
+    io.to(local_machine_socket_id).emit("exec:input", data);
+    // execCommand(data, socket);
   });
 
   socket.on("disconnect", (socket) => {

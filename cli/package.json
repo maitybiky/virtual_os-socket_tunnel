@@ -22,7 +22,9 @@
   },
   "pkg": {
     "scripts": "index.js",
-    "assets": ["node_modules/axios/dist/**/*"],
+    "assets": [
+      "node_modules/axios/dist/**/*"
+    ],
     "targets": [
       "node18-linux-x64"
     ]

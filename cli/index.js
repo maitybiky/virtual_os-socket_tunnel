@@ -2,31 +2,59 @@ const pkg = require("keytar");
 const { getPassword, deletePassword, setPassword } = pkg;
 const { io } = require("socket.io-client");
 const axios = require("axios");
-const inquirer = require("inquirer").default
-var SOCKET;
+const inquirer = require("inquirer").default;
+var socket;
+var connectColorCode = "32;40";
+var disconnectColorCode = "93;40";
+
+function changeTextColor(text, colorCode) {
+  return `\x1b[${colorCode}m${text}\x1b[0m`; // Reset color after the text
+}
+
 function onConnect() {
-  console.log("connected to Web...");
+  if (!socket) return;
+  socket.emit("test", "testing");
+  console.log(
+    changeTextColor(
+      ".......................\n: connected to Web... :\n.......................",
+      connectColorCode
+    )
+  );
+
   showMenu(["Disconnect", "Log Out", "Exit"]);
 }
 function onConnectError(err) {
-  console.log("Connect Error",err.message);
+  console.log("Connect Error", err.message);
+  // console.log("Connect Error", err);
+  if (err.type === "TransportError") return; //because it will retry that cause inquirer unneccesey event listern by below show menu func
   showMenu(["log in"]);
 }
+
+function onExecInput(data) {
+  console.log(data);
+}
 function onDisconnect() {
-  console.log("\nsocket disconnected\n");
+  console.log(
+    changeTextColor(
+      ".......................\n: disconnected :\n.......................",
+      disconnectColorCode
+    )
+  );
 }
 async function socketInit(_token) {
   const token = _token ?? (await getPassword("vos-client-007", "user"));
 
-  const socket = io("http://localhost:8000", {
+  socket = io("http://localhost:8000", {
     auth: {
       token,
     },
+    query: "agent=cli",
   });
   socket.on("connect", onConnect);
+  socket.on("exec:input", onExecInput);
   socket.on("connect_error", onConnectError);
   socket.on("disconnect", onDisconnect);
-  SOCKET = socket;
+
   return socket;
 }
 
@@ -63,23 +91,22 @@ function showMenu(opts = ["Disconnect", "Log Out"]) {
     })
     .catch((error) => {})
     .finally(() => {
-      console.log("\n");
+      console.log("");
     });
 }
 
 function socketDisconnect() {
-  const socket = SOCKET;
-
-  if (!socket) return console.log("socket instance not found!!!");
+  if (!socket) return;
 
   socket.off("connect", onConnect);
+  socket.off("exec:input", onExecInput);
   socket.off("connect_error", onConnectError);
   socket.off("disconnect", onDisconnect);
 
   socket.disconnect();
   onDisconnect();
-  SOCKET = null;
-  showMenu(["Re connect", "Log Out"]);
+
+  showMenu(["Re connect", "Log Out", "Exit"]);
 }
 
 function verifyEmail(input) {
@@ -99,9 +126,8 @@ function askCredentialsAndConnect() {
     name: "password",
     message: "Enter Password",
   };
-  console.log("inq");
+
   return new Promise((resolve, reject) => {
-    console.log("\n");
     inquirer
       .prompt([askEmail, askPassword])
       .then(({ email, password }) => {
@@ -117,9 +143,7 @@ function askCredentialsAndConnect() {
       .catch((error) => {
         console.log(error.message);
       })
-      .finally(() => {
-        console.log("\n");
-      });
+      .finally(() => {});
   });
 }
 
@@ -160,5 +184,3 @@ async function cheakAuth() {
   }
 }
 cheakAuth();
-
-
