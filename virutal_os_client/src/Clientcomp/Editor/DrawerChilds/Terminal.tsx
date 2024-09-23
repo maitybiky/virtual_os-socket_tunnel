@@ -4,13 +4,14 @@ import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import useTerminalStore, { IO } from "@/util/globalState/terminal";
 import MinimizeIcon from "@mui/icons-material/Minimize";
-import { IconButton } from "@mui/material";
+import { IconButton, Snackbar } from "@mui/material";
 import ClearIcon from "@mui/icons-material/Clear";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import { CloseCallbackData } from "@/Clientcomp/EditorDrawer";
 import { io, Socket } from "socket.io-client";
-
+import CloseIcon from "@mui/icons-material/Close";
+import PhonelinkIcon from "@mui/icons-material/Phonelink";
 const TerminalComp = ({
   onTerminalAction,
   terminalScreenType,
@@ -21,28 +22,22 @@ const TerminalComp = ({
   isOpen: boolean;
   onStdout?: (mresult: string) => void;
 }) => {
-  const {
-    commandHistory,
-    lastCommand,
-    keyPress,
-    pushToCommandHistory,
-    clearTerminal,
-  } = useTerminalStore();
+  const { keyPress, timestamp } = useTerminalStore();
   const [isConnected, setIsConnected] = useState(false);
+  const [errMsg, setErrMsg] = useState("");
+  const [open, setOpen] = React.useState(false);
+  const [info, setInfo] = useState("...");
   const [transport, setTransport] = useState("N/A");
   const terminal = useRef<Terminal | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  // const directory = useRef<string>("╭─ 👾 ~ /surajit\r\n");
-  // const lineArrow = useRef<string>("╰─❯");
+
   const socketRef = useRef<Socket | null>(null);
 
   const onConnect = useCallback(() => {
     setIsConnected(true);
+    console.log(isOpen, "isopen");
 
-    socketRef.current?.emit("container-id", {
-      id: "180b33c37024",
-    });
     socketRef.current?.on("exec:output", onOuput);
     socketRef.current?.on("exec:error", onError);
     socketRef.current?.on("exec:info", onInfo);
@@ -55,20 +50,19 @@ const TerminalComp = ({
     setIsConnected(false);
     setTransport("N/A");
   }, []);
-  const onConnectError = useCallback(function (err:Error) {
+  const onConnectError = useCallback(function (err: Error) {
     console.log("Connection Error : ", err.message);
-    
-    alert(err.message)
+
+    setErrMsg(err.message);
+    setOpen(true);
   }, []);
   useEffect(() => {
-    if (!isOpen) {
-      return onTerminalClose();
-    }
-
+    if (!isOpen) return;
+    if (socketRef.current) return;
     const tunnelServerUrl =
       process.env.NEXT_PUBLIC_TUNNEL_SERVER ?? "http://localhost:8000";
 
-    const socketToken = localStorage.getItem("socket-auth");
+    const socketToken = sessionStorage.getItem("socket-auth");
 
     if (!socketToken) return alert("un authorized relogin");
 
@@ -78,23 +72,17 @@ const TerminalComp = ({
       },
       query: {
         agent: "web",
+        containerId: "host",
       },
     });
-    if (socketRef.current?.connected) {
-      onConnect();
-    }
+    console.log(socketRef.current);
 
     socketRef.current?.on("connect", onConnect);
     socketRef.current?.on("disconnect", onDisconnect);
     socketRef.current?.on("connect_error", onConnectError);
-
-
-    return () => {
-      onTerminalClose();
-    };
-  }, [isOpen, onConnect, onTerminalClose]);
+  }, [isOpen]);
   function onTerminalClose() {
-    console.log("unmount");
+    if (!socketRef.current) return;
     socketRef.current?.off("connect", onConnect);
     socketRef.current?.off("connect_error", onConnectError);
     socketRef.current?.off("disconnect", onDisconnect);
@@ -103,18 +91,26 @@ const TerminalComp = ({
     socketRef.current?.off("exec:error", onError);
     socketRef.current?.io.engine.off("upgrade");
     socketRef.current?.disconnect();
+    socketRef.current = null;
   }
 
   function onOuput(data: string) {
     terminal.current?.write(data);
+
   }
   function onError(data: any) {
-    console.log(data);
+    setErrMsg(data.msg);
+    setOpen(true);
+    console.log(data.msg);
   }
   function onInfo(data: any) {
-    console.log("INFO: ", data);
+    sendKeyPressToServer("uname -a\n");
+    setInfo(data.msg);
+    setErrMsg(data.msg);
+    setOpen(true);
   }
   // side effect when key press for terminal
+
   useEffect(() => {
     if (!keyPress) return;
 
@@ -135,26 +131,46 @@ const TerminalComp = ({
         sendKeyPressToServer(keyPress);
         break;
     }
-  }, [keyPress]);
+  }, [keyPress, timestamp]);
 
   useEffect(() => {
     if (terminalRef.current) {
-      terminal.current = new Terminal();
+      terminal.current = new Terminal({
+        cursorBlink: true,
+        cursorStyle: "block",
+      })
       terminal.current?.open(terminalRef.current);
+      const textarea = document.getElementsByClassName('xterm-helper-textarea')[0];
+      console.log(textarea)
+      textarea?.setAttribute('inputMode', "none");
     }
     return () => {
+      onTerminalClose();
       terminal.current?.dispose();
     };
   }, []);
 
   const sendKeyPressToServer = (command: string) => {
-    if (socketRef.current?.connected) {
+    console.log(command, socketRef);
+    if (socketRef.current) {
       socketRef.current?.emit("exec:input", { command });
     } else {
       console.error("Socket is not connected, cannot send command.");
     }
   };
 
+  const action = (
+    <React.Fragment>
+      <IconButton
+        size="small"
+        aria-label="close"
+        color="inherit"
+        onClick={() => setOpen(false)}
+      >
+        <CloseIcon fontSize="small" />
+      </IconButton>
+    </React.Fragment>
+  );
   return (
     <>
       <div
@@ -167,7 +183,25 @@ const TerminalComp = ({
           paddingRight: 5,
         }}
       >
-        <IconButton>{isConnected ? "online" : "offline"}</IconButton>
+        <Snackbar
+          open={open}
+          autoHideDuration={6000}
+          onClose={() => {
+            setOpen(false);
+            setErrMsg("");
+          }}
+          message={errMsg}
+          action={action}
+        />
+
+        <IconButton>
+          {info.includes("online") && isConnected ? (
+            <PhonelinkIcon sx={{ color: "green" }} />
+          ) : (
+            <PhonelinkIcon sx={{ color: "red" }} />
+          )}
+        </IconButton>
+
         <IconButton onClick={() => onTerminalAction({ type: "minimize" })}>
           <MinimizeIcon />
         </IconButton>

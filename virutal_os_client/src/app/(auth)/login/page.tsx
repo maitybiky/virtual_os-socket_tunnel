@@ -35,15 +35,15 @@ const SignIn = () => {
           password,
         });
         console.log("response.data", response.data);
-        localStorage.setItem("auth", "true");
-        localStorage.setItem("socket-auth", response.data.socketToken);
+        sessionStorage.setItem("auth", "true");
+        sessionStorage.setItem("socket-auth", response.data.socketToken);
         router.push("/dashboard");
       } catch (error: any) {
         console.log("error", error);
         setAlert(
           <Alert severity="error">
             <AlertTitle>Error</AlertTitle>
-            {error?.response?.data?.error ?? error?.message}
+            {error?.response?.data?.msg || error?.message}
           </Alert>
         );
       } finally {
@@ -72,7 +72,8 @@ const SignIn = () => {
           Sign In
         </Typography>
         {alert}
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+        <form onSubmit={handleSubmit}>
+       
           <TextField
             margin="normal"
             required
@@ -111,6 +112,7 @@ const SignIn = () => {
           >
             Sign In
           </Button>
+
           <Grid2 container>
             <Grid2>
               <Link href="#" variant="body2">
@@ -123,7 +125,8 @@ const SignIn = () => {
               </Link>
             </Grid2>
           </Grid2>
-        </Box>
+        
+        </form>
       </Box>
     </Container>
   );

@@ -33,7 +33,7 @@ const useEditorSettingStore = create<EditorSettingState>(
     }),
     {
       name: "editor-setting-storage",
-      getStorage: () => localStorage,
+      getStorage: () => sessionStorage,
     }
   )
 );

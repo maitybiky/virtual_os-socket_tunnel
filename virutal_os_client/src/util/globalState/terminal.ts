@@ -11,6 +11,7 @@ interface TerminalState {
   lastCommand: IO | null;
   keyPress: string | null;
   cursorPosition: number;
+  timestamp: number;
   pushToCommandHistory: (cmnd: IO) => void;
   writeToTerminal: (key: string) => void;
   clearTerminal: () => void;
@@ -25,6 +26,7 @@ const useTerminalStore = create<TerminalState>(
   (persist as PersistInterFace)(
     (set, get) => ({
       commandHistory: [],
+      timestamp: Date.now(),
       lastCommand: null,
       cursorPosition: 0,
       keyPress: null,
@@ -36,12 +38,13 @@ const useTerminalStore = create<TerminalState>(
       writeToTerminal: (key) =>
         set((state) => ({
           keyPress: key,
+          timestamp: Date.now(),
         })),
       clearTerminal: () => set(() => ({ commandHistory: [] })),
     }),
     {
       name: "terminal-storage",
-      getStorage: () => localStorage,
+      getStorage: () => sessionStorage,
     }
   )
 );

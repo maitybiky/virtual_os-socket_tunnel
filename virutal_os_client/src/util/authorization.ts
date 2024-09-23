@@ -18,15 +18,18 @@ export const decodeJwt = (token: string) => {
   return tokenData;
 };
 
-export const generatecontainerToken = (userData: {
-  email: string;
-  containerId?: string;
-  _id?: string;
-}) => {
+export const generatecontainerToken = (
+  userData: {
+    email: string;
+    containerId?: string;
+    _id?: string;
+  },
+  config = {}
+) => {
   const secret = process.env.CONTAINER_ENC_SECRET;
 
   if (!secret) throw new Error("secret key not found!!!");
-  const accessToken = sign(userData, secret, { expiresIn: "1h" });
+  const accessToken = sign(userData, secret, { ...config });
   return accessToken;
 };
 

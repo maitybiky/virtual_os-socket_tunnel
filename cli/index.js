@@ -3,6 +3,8 @@ const { getPassword, deletePassword, setPassword } = pkg;
 const { io } = require("socket.io-client");
 const axios = require("axios");
 const inquirer = require("inquirer").default;
+const pty = require("node-pty");
+const shells = {};
 var socket;
 var connectColorCode = "32;40";
 var disconnectColorCode = "93;40";
@@ -31,7 +33,8 @@ function onConnectError(err) {
 }
 
 function onExecInput(data) {
-  console.log(data);
+  if (!socket) return;
+  execCommand(data);
 }
 function onDisconnect() {
   console.log(
@@ -108,7 +111,52 @@ function socketDisconnect() {
 
   showMenu(["Re connect", "Log Out", "Exit"]);
 }
+function getShell(environmentId, socket) {
+  let shell;
+  if (!shells[environmentId]) {
+    if (environmentId === "host") {
+      // shell in host machine
+      shell = pty.spawn("bash", [], {
+        name: "xterm-color",
+        cols: 80, // Terminal width
+        rows: 24, // Terminal height
+        cwd: process.env.HOME,
+        env: process.env,
+      });
+    } else {
+      // shell in docker container
+      shell = pty.spawn("docker", ["exec", "-it", environmentId, "bash"], {
+        name: "xterm-color",
+        cols: 80, // Terminal width
+        rows: 24, // Terminal height
+        cwd: process.env.HOME,
+        env: process.env,
+      });
+    }
 
+    shells[environmentId] = { shell };
+    shell.on("data", function (data) {
+      // console.log("bro", data);
+      console.log('cli send output')
+      socket.emit("exec:output", data); // Send the output to xterm.js
+    });
+  }
+
+  return shells[environmentId];
+}
+
+async function execCommand(commandData) {
+  const { environmentId, command } = commandData;
+console.log('command',command)
+  // if (environmentId === "host" )
+  //   socket.emit("exec:error", {
+  //     msg: { containerId: false },
+  //   });
+
+  const { shell } = getShell(environmentId, socket);
+console.log(!!shell)
+  shell.write(`${command}`);
+}
 function verifyEmail(input) {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (emailRegex.test(input)) return true;

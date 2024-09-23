@@ -85,7 +85,7 @@ const useEditorStore = create<EditorState>(
     }),
     {
       name: "editor-storage",
-      getStorage: () => localStorage,
+      getStorage: () => sessionStorage,
     }
   )
 );

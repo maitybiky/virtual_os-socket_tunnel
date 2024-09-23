@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import cookie from "cookie";
 import { createToken, generatecontainerToken } from "@/util/authorization";
+import { createErrorBody } from "../../(util)";
 export const POST = async (req: NextRequest) => {
   try {
     await connectToDatabase();
@@ -34,7 +35,10 @@ export const POST = async (req: NextRequest) => {
       { expiresIn: "30d" }
     );
 
-    const socketToken = generatecontainerToken({ email, _id: user._id });
+    const socketToken = generatecontainerToken(
+      { email, _id: user._id },
+      { expiresIn: "7d" }
+    );
     const userAgent = req.headers.get("user-agent");
     if (userAgent === "cli") {
       return NextResponse.json(
@@ -60,6 +64,6 @@ export const POST = async (req: NextRequest) => {
     );
   } catch (error) {
     console.log("error", error);
-    return NextResponse.json({ error }, { status: 500 });
+    return NextResponse.json(createErrorBody(error), { status: 500 });
   }
 };
