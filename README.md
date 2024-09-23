@@ -3,7 +3,10 @@
 **Project Description:**
 
 This project features a web interface designed especially for smartphones that includes a terminal, file manager, and code editor. Users can download the CLI program, **vos**, for Linux, log in with their credentials, and establish a socket tunnel between their local PC and the web client. This setup allows remote access to the local PC directly from the web terminal, enabling seamless management and coding on the go.
-system design <a href="https://app.eraser.io/workspace/I51LrmRuX4BWp7aqkOku?origin=share">here</a>
+
+## system design
+
+<a target="_blank" href="https://app.eraser.io/workspace/I51LrmRuX4BWp7aqkOku?origin=share">view</a>
 
 ## Run Locally
 
