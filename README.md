@@ -1,42 +1,53 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Virtual OS
 
-## Getting Started
+**Project Description:**
 
-First, run the development server:
+This project features a web interface designed for smartphones that includes a terminal, file manager, and code editor. Users can download the CLI program, **vos**, for Linux, log in with their credentials, and establish a socket tunnel between their local PC and the web client. This setup allows remote access to the local PC directly from the web terminal, enabling seamless management and coding on the go.
+
+## Run Locally
+
+Clone the project
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+  git clone git@github.com:maitybiky/virtual_os-socket_tunnel.git
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Go to the project directory
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+  cd virtual_os-socket_tunnel
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+Install cli programm for local pc
 
-## Learn More
+```bash
+  cd cli && npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+Start the cli
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+  ./vos
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+Go to the virtual_os_server directory in new tab
 
-## Deploy on Vercel
+```bash
+  cd virtual_os_server
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+  npm install
+  npm start # default port 8000
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Go to the virtual_os_client directory in new tab
 
-# virtual_os-socket_tunnel
+```bash
+  cd virtual_os_client
+```
 
-# virtual_os-socket_tunnel
-
-# virtual_os-socket_tunnel
+```bash
+  npm install
+  npm run dev # default port 3000
+```
