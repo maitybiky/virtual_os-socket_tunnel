@@ -20,7 +20,11 @@ const SettingList = [
     icon: <KeyboardIcon />,
   },
 ];
-const Setting = () => {
+const Setting = ({
+  onSettingAction,
+}: {
+  onSettingAction: () => void;
+}) => {
   const [open, setOpen] = React.useState(false);
   const [keyboardSettingOpen, setKeyboardSettingOpen] = React.useState(false);
 
@@ -40,7 +44,7 @@ const Setting = () => {
               Settings
             </Typography>
           </ListItemIcon>
-          <IconButton>
+          <IconButton onClick={onSettingAction}>
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
         </ListItemButton>

@@ -8,6 +8,8 @@ import useTerminalStore from "@/util/globalState/terminal";
 
 const KeyPad = ({ keys }: { keys: string[][] }) => {
   const { writeToFile, currentKeyBoardFor } = useEditorStore();
+  const { keySpacing, keyFontSize, keyHeight, keyWidth } =
+    useEditorSettingStore();
   const { writeToTerminal } = useTerminalStore();
   const {
     keyBoardTheme,
@@ -25,7 +27,7 @@ const KeyPad = ({ keys }: { keys: string[][] }) => {
         alignItems: "center",
       }}
       container
-      spacing={0.5}
+      spacing={keySpacing}
       columns={4}
     >
       {keys.map((key, index) => (
@@ -42,10 +44,14 @@ const KeyPad = ({ keys }: { keys: string[][] }) => {
               else writeToFile(key[whichKeyLayout]);
             }}
             sx={{
-              height: "2.2rem",
-              minWidth: key[whichKeyLayout] === "space" ? "6rem" : "2.9rem",
+              padding: "5px",
+              height: `${keyHeight / 10}rem`,
+              minWidth:
+                key[whichKeyLayout] === "space"
+                  ? `${keyWidth / 10 + 4}rem`
+                  : `${keyWidth / 10}rem`,
               textTransform: "none",
-              fontSize: "0.8rem",
+              fontSize: `${keyFontSize / 10}rem`,
               // padding: "0 1rem",
               "&:hover": {
                 // fontSize: "1.5rem",

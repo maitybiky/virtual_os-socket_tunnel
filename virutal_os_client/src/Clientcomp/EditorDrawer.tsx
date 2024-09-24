@@ -41,7 +41,12 @@ export default function EditorDrawer({
   const [terminalScreenType, setTerminalScreenType] = useState<
     "full-screen" | "normal-screen"
   >("normal-screen");
-
+const onSettingAction=()=>{
+  setState((prevState) => ({
+    ...prevState,
+    right: false, 
+  }));
+}
   // handle either terminla close or open or minimize
   const onTerminalAction = ({ type }: CloseCallbackData) => {
     if (type === "close") {
@@ -77,7 +82,7 @@ export default function EditorDrawer({
     },
     {
       position: "right",
-      child: <Setting />,
+      child: <Setting onSettingAction={onSettingAction} />,
       button: <SettingsIcon />,
     },
     {
